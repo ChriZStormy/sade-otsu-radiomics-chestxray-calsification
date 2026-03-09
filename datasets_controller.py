@@ -52,7 +52,6 @@ class MicroDE_MultiOtsu:
         hist = cv2.calcHist([image], [0], None, [256], [0, 256]).flatten()
         total_pixels = image.size
         
-        # Inicialización de población y parámetros autoadaptativos
         pop = np.random.uniform(0, 255, (self.NP, self.D))
         pop = np.sort(pop, axis=1)
         F = np.random.uniform(0.1, 1.0, self.NP)
@@ -64,7 +63,6 @@ class MicroDE_MultiOtsu:
             best_idx = np.argmin(fitness)
             
             for i in range(self.NP):
-                # Autoadaptación de F y CR (esquema tipo jDE)
                 F_i = F[i] if np.random.rand() > 0.1 else np.random.uniform(0.1, 1.0)
                 CR_i = CR[i] if np.random.rand() > 0.1 else np.random.uniform(0.1, 1.0)
                 
@@ -72,7 +70,6 @@ class MicroDE_MultiOtsu:
                 np.random.shuffle(idxs)
                 r1, r2, r3, r4, r5 = idxs[:5]
                 
-                # Mutación
                 if self.strategy == 'DE/rand/1':
                     V = pop[r1] + F_i * (pop[r2] - pop[r3])
                 elif self.strategy == 'DE/best/1':
