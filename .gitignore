@@ -8,6 +8,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.vscode/
+results
 
 # 3. Checkpoints de Jupyter Notebooks (si usas libretas para experimentar)
 .ipynb_checkpoints/
