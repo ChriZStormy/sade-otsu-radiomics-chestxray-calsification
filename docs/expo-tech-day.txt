@@ -1,0 +1,148 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+% Configuración de idioma y paquetes
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+
+\title[Salud e IA]{Revolucionando el Diagnóstico Médico con Inteligencia Artificial}
+\subtitle{Precisión y Velocidad para Salvar Vidas}
+\author[Equipo de Innovación]{Proyecto de Innovación en Salud}
+\institute[UG]{Universidad de Guanajuato}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{El Problema}
+    \begin{itemize}
+        \item \textbf{Sobrecarga médica:} Los especialistas analizan miles de radiografías, lo que genera fatiga.
+        \item \textbf{Tiempo valioso:} En enfermedades respiratorias, cada minuto cuenta. Un diagnóstico tardío puede ser fatal.
+        \item \textbf{Costos elevados:} Los errores o retrasos en el diagnóstico aumentan los costos hospitalarios.
+    \end{itemize}
+    \vspace{0.5cm}
+    \begin{alertblock}{Nuestra Realidad}
+        El ojo humano tiene límites. Hay patrones en las imágenes médicas que son invisibles a simple vista.
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{La Solución: Nuestro "Copiloto" Médico}
+    Hemos desarrollado un \textbf{asistente inteligente} para médicos radiólogos:
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item Analiza radiografías de tórax en \textbf{cuestión de segundos}.
+        \item Detecta patrones complejos con una precisión de vanguardia.
+        \item \textbf{El objetivo no es reemplazar al médico, sino darle "superpoderes"}.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{¿Cómo funciona la magia? (Sin tecnicismos)}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \textbf{1. Ver lo invisible:} \\
+            Extraemos datos de la imagen que escapan a la percepción humana (Radiómica).
+            \vspace{0.5cm} \\
+            \textbf{2. Inteligencia en acción:} \\
+            Usamos algoritmos que aprenden y "evolucionan" para ubicar de forma automática las zonas afectadas por enfermedades.
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \begin{center}
+                % Puedes cambiar 'example-image-a' por una imagen real de tu proyecto
+                \includegraphics[width=0.8\textwidth]{example-image-a} \\
+                \footnotesize \textit{De una imagen estándar a un diagnóstico respaldado por datos.}
+            \end{center}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Nuestro Proceso: De la Imagen al Diagnóstico}
+    Un flujo de trabajo diseñado para ser \textbf{simple, rápido y efectivo}:
+    \vspace{0.5cm}
+    \begin{enumerate}
+        \item \textbf{1. Recepción:} El sistema captura la radiografía digital del paciente al instante.
+        \item \textbf{2. Procesamiento Inteligente:} La IA aísla automáticamente la zona de interés (pulmones) y extrae los patrones ocultos.
+        \item \textbf{3. Análisis y Clasificación:} El motor de IA compara estos datos contra miles de casos médicos históricos en milisegundos.
+        \item \textbf{4. Resultado:} Entrega una sugerencia de diagnóstico (ej. Normal, COVID-19, Neumonía) lista para la revisión y validación final del especialista.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{El Impacto Real}
+    \begin{block}{Para el Paciente}
+        Diagnósticos más rápidos y precisos. Tratamientos oportunos y mayor tranquilidad.
+    \end{block}
+    
+    \begin{block}{Para el Médico}
+        Reducción del estrés, segunda opinión automática y priorización de casos graves.
+    \end{block}
+    
+    \begin{block}{Para el Hospital o Clínica}
+        Atención a más pacientes, reducción de costos operativos y vanguardia tecnológica.
+    \end{block}
+\end{frame}
+
+\begin{frame}{¿Por qué somos diferentes?}
+    A diferencia de otras soluciones en el mercado:
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item \textbf{Ultra-Rápido:} Nuestro enfoque de Inteligencia Artificial es drásticamente más rápido que los métodos convencionales.
+        \item \textbf{Altamente Eficiente:} Requiere menos recursos de computadora, ideal para clínicas en zonas remotas o con bajo presupuesto.
+        \item \textbf{Confiable:} Diseñado específicamente para superar los problemas del ruido y variabilidad en radiografías médicas.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{La Oportunidad de Mercado}
+    \begin{itemize}
+        \item El mercado global de IA en salud está explotando.
+        \item Clínicas privadas, hospitales públicos y laboratorios de diagnóstico buscan modernizarse con urgencia.
+        \item El auge de la telemedicina requiere herramientas de validación rápida.
+    \end{itemize}
+    \vspace{0.5cm}
+    \begin{center}
+        \textbf{Tenemos la tecnología adecuada, en el momento preciso.}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Nuestro Camino (Roadmap)}
+    \begin{enumerate}
+        \item \textbf{Fase 1 (Completada):} Validación científica de nuestro algoritmo superando los estándares actuales.
+        \item \textbf{Fase 2 (Próxima):} Pruebas piloto en hospitales locales para evaluar el desempeño en el mundo real.
+        \item \textbf{Fase 3 (Futuro):} Integración del software como un servicio (SaaS) en plataformas médicas comerciales.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{¿Qué buscamos hoy?}
+    Estamos listos para el siguiente nivel. Buscamos:
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item \textbf{Alianzas Estratégicas:} Hospitales y directores médicos interesados en programas piloto gratuitos.
+        \item \textbf{Inversión Semilla / Apoyo Institucional:} Para llevar la plataforma del laboratorio al uso clínico real.
+        \item \textbf{Mentores y Contactos:} Expertos en regulación médica y comercialización de tecnología en salud.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{El Equipo detrás del Éxito}
+    \begin{center}
+        Somos un equipo multidisciplinario nacido en la \textbf{Universidad de Guanajuato}. \\
+        \vspace{0.5cm}
+        Combinamos años de investigación en Inteligencia Artificial, Optimización y Análisis de Datos con un solo objetivo: \textbf{mejorar la vida de las personas}.
+        \vspace{1cm} \\
+        \large \textbf{Únete a nosotros en la revolución de la medicina.}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \begin{center}
+        \Huge \textbf{¡Muchas Gracias!}
+        \vspace{1cm} \\
+        \Large ¿Tienen alguna pregunta?
+        \vspace{0.5cm} \\
+        \normalsize \textit{Aquí puedes poner tu contacto / LinkedIn}
+    \end{center}
+\end{frame}
+
+\end{document}

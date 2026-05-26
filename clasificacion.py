@@ -14,6 +14,14 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # ==========================================
+# CREAR CARPETAS NECESARIAS AUTOMÁTICAMENTE
+# ==========================================
+# exist_ok=True evita que el programa marque error si la carpeta ya existe
+os.makedirs("results/logs", exist_ok=True)
+os.makedirs("results/metrics", exist_ok=True)
+os.makedirs("results/images", exist_ok=True)
+
+# ==========================================
 # 0. CLASE PARA REDIRECCIONAR IMPRESIONES A TXT
 # ==========================================
 class Logger(object):
@@ -48,7 +56,7 @@ def procesar_dataset(archivo, enfermedad, mutacion, D, n_splits=10, n_repeats=5)
         return archivo, None, f"[ERROR] La columna 'label' no existe en: {archivo}"
 
     cols_umbrales = [col for col in df.columns if col.startswith('P') and col[1:].isdigit()]
-    columnas_sesgo = cols_umbrales + ['mu', 'std', 'best_fitness']
+    columnas_sesgo = cols_umbrales + ['best_fitness']
     cols_a_borrar = ['label'] + [c for c in columnas_sesgo if c in df.columns]
     
     X = df.drop(columns=cols_a_borrar, errors='ignore').values
@@ -201,12 +209,12 @@ def realizar_test_estadistico_maestro(df_completo, metrica='f1_test'):
 if __name__ == "__main__":
     start_time = time.time()
     
-    enfermedades = ["COVID19", "Neumonia", "Tuberculosis"]
+    enfermedades = ["Alzheimer", "Stroke", "Tumor"]
     algoritmos = ['uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
     niveles_umbrales = [3, 6, 12]
     
     n_splits = 10
-    n_repeats = 5
+    n_repeats = 4
     
     print(f"============================================================")
     print(f"[INFO] Iniciando Pipeline de Consolidación Global")
@@ -217,7 +225,7 @@ if __name__ == "__main__":
     for D in niveles_umbrales:
         for enfermedad in enfermedades:
             for mutacion in algoritmos:
-                archivo = f"results/datasets/Radiomics_{enfermedad}_{mutacion}_D{D}.csv"
+                archivo = f"results/radiomics-datasets-brain/Radiomics_{enfermedad}_{mutacion}_D{D}.csv"
                 lista_tareas.append((archivo, enfermedad, mutacion, D))
 
     print(f"\n[Buscando {len(lista_tareas)} archivos CSV en paralelo...]")

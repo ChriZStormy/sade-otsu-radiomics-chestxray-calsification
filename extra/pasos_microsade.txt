@@ -1,0 +1,22 @@
+PASOS PRINCIPALES DEL ALGORITMO MICRO-SADE PROGRAMADO (uSADE)
+
+1. Población Inicial (Micro-población)
+Crear un grupo muy pequeño de soluciones al azar (ej. 5 individuos) y probar qué tan buena es cada una mediante la Función Objetivo.
+
+2. Autoadaptación de Parámetros
+Ajustar y cambiar automáticamente la "fuerza" de la mutación y el cruce (parámetros F y Cr) en cada individuo mediante probabilidades (tau1 y tau2).
+
+3. Mecanismo de Reinicio (Restart)
+Cada cierto número de generaciones, identificar a los mejores individuos y preservarlos, mientras que el resto se borra y se reemplaza por soluciones completamente nuevas al azar. Esto evita que el algoritmo se atasque.
+
+4. Mutación
+Tomar un individuo y generar una nueva "idea" o vector candidato mezclando matemáticamente la posición de otros individuos de la población (ej. DE/rand/1 o DE/best/1).
+
+5. Cruzamiento (Recombinación)
+Mezclar la información de la solución actual con la nueva "idea" generada en el paso de mutación para crear una solución final.
+
+6. Selección
+Evaluar la nueva solución final. Si su resultado es mejor que la solución original, la reemplaza y toma su lugar.
+
+7. Repetir 
+Repetir desde el paso 2 hasta alcanzar el número máximo de evaluaciones (max_fes) permitidas.

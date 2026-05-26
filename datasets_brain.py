@@ -12,8 +12,31 @@ from skimage.measure import label, regionprops
 from skimage.filters import threshold_multiotsu
 from joblib import Parallel, delayed
 import warnings
+import logging
 
 warnings.filterwarnings("ignore")
+
+# =====================================================================
+# --- CONFIGURACIÓN DE RUTAS Y LOGS ---
+# =====================================================================
+BASE_OUT_DIR = Path("results/brain")
+LOG_DIR = BASE_OUT_DIR / "logs"
+CSV_DIR = BASE_OUT_DIR / "csv_caracteristicas_radiomicas_brain"
+IMG_DIR = BASE_OUT_DIR / "images"
+METRICS_DIR = BASE_OUT_DIR / "metrics"
+
+for d in [LOG_DIR, CSV_DIR, IMG_DIR, METRICS_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
+
+# Configurar logging para escribir en consola y en archivo
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_DIR / "ejecucion_radiomica.log", mode='a'),
+        logging.StreamHandler()
+    ]
+)
 
 # --- FUNCIÓN DE FITNESS EXTERNA ---
 def calculate_fitness(thresholds, hist, total_pixels):
@@ -23,12 +46,11 @@ def calculate_fitness(thresholds, hist, total_pixels):
     mu = np.zeros(D + 1)
     bins = np.arange(256)
     
-    # Crear rangos dinámicos basados en los umbrales
     ranges = [0] + list(t) + [256]
     
     for i in range(D + 1):
         start, end = ranges[i], ranges[i+1]
-        if start >= end: continue # Prevenir errores si los umbrales colapsan
+        if start >= end: continue 
         
         w[i] = np.sum(hist[start:end]) / total_pixels
         if w[i] > 0:
@@ -39,14 +61,12 @@ def calculate_fitness(thresholds, hist, total_pixels):
     return -sigma_b_sq 
 
 # --- CLASE DE OPTIMIZACIÓN 1: MICRO-DE (µSADE) ---
-
 class uSADE_MultiOtsu:
     def __init__(self, D, NP=5, max_fes=3000, strategy='DE/rand/1', restart_iters=10, e=1, Fl=0.1, Fu=0.9, tau1=0.1, tau2=0.1):
         self.D = D                      
         self.NP = NP                    
         self.max_fes = max_fes 
         self.strategy = strategy
-        
         self.restart_iters = restart_iters 
         self.e = e                      
         self.Fl = Fl                    
@@ -93,17 +113,14 @@ class uSADE_MultiOtsu:
             for i in range(self.NP):
                 if fes >= self.max_fes: break 
                 
-                # ... código anterior ...
                 idxs = [idx for idx in range(self.NP) if idx != i]
                 np.random.shuffle(idxs)
-                
                 r1, r2, r3 = idxs[:3] 
                 
                 if self.strategy == 'DE/rand/1':
                     V = pop[r1] + F[i] * (pop[r2] - pop[r3])
                 elif self.strategy == 'DE/best/1':
                     V = pop[best_idx] + F[i] * (pop[r1] - pop[r2])
-                # ... código siguiente ...
                 
                 V = np.sort(np.clip(V, 0, 255))
                 
@@ -124,11 +141,11 @@ class uSADE_MultiOtsu:
                 
         best_idx = np.argmin(fitness)
         return np.round(pop[best_idx]).astype(int), fitness[best_idx], (convergence_fes, convergence_fitness)
+
 # --- CLASE DE OPTIMIZACIÓN 2: STANDARD DE ---
 class StandardDE_MultiOtsu:
     def __init__(self, D, NP=100, max_fes=3000, strategy='DE/rand/1', F=0.5, Cr=0.9):
         self.D = D
-        # Población estándar suele ser 5 o 10 veces la dimensionalidad
         self.NP = NP if NP is not None else max(10, 5 * D) 
         self.max_fes = max_fes
         self.strategy = strategy
@@ -182,7 +199,6 @@ class StandardDE_MultiOtsu:
 
 # --- EXTRACCIÓN DE CARACTERÍSTICAS ---
 def extract_features(image, thresholds):
-    # Usamos el umbral más alto para aislar la ROI más brillante como referencia
     mask = (image >= thresholds[-1]).astype(np.uint8)
     regions = regionprops(label(mask))
     areas = [r.area for r in regions]
@@ -196,47 +212,24 @@ def extract_features(image, thresholds):
     ]
     return features
 
-# --- RECOLECTORES DE RUTAS ---
-def     get_covid_paths(base):
+# =====================================================================
+# --- RECOLECTOR DE RUTAS CON ORDEN DETERMINISTA ---
+# =====================================================================
+def get_dataset_paths(dataset_folder_path):
     paths = []
-    p = Path(base) / "Chest-X-Ray-COVID19"
-    for folder, label_val in [("Normal", 0), ("COVID", 1)]:
-        target_dir = p / folder / "images"
-        if target_dir.exists():
-            for img in target_dir.glob("*"):
-                if img.suffix.lower() in ['.png', '.jpg', '.jpeg'] and "mask" not in str(img).lower():
+    p = Path(dataset_folder_path)
+    clases = {"Sano": 0, "Enfermo": 1}
+    
+    for clase_nombre, label_val in clases.items():
+        carpeta_clase = p / clase_nombre
+        if carpeta_clase.exists():
+            for img in carpeta_clase.rglob("*"):
+                if img.suffix.lower() in ['.png', '.jpg', '.jpeg'] and img.is_file():
                     paths.append((img, label_val))
-    return paths
-
-def get_neumonia_paths(base):
-    paths = []
-    p = Path(base) / "Chest-X-Ray-Neumonia"
-    for img in p.rglob("*"):
-        if img.suffix.lower() in ['.jpeg', '.jpg'] and "mask" not in str(img).lower():
-            if img.is_file():
-                if "NORMAL" in str(img).upper(): paths.append((img, 0))
-                elif "PNEUMONIA" in str(img).upper(): paths.append((img, 1))
-    return paths
-
-def get_tb_paths(base):
-    paths = []
-    p = Path(base) / "Chest-X-Ray-Tuberculosis"
-    csv_path = p / "MetaData.csv" 
-    if not csv_path.exists(): return []
-
-    df = pd.read_csv(csv_path)
-    for _, row in df.iterrows():
-        img_id = str(row['id'])
-        label_val = int(row['ptb']) 
-        img_name = f"{img_id}.png" 
-        img_path = p / "Chest-X-Ray" / "image" / img_name
-        
-        if not img_path.exists():
-            img_path = p / "images" / img_name
-
-        if img_path.exists() and "mask" not in str(img_path).lower():
-            paths.append((img_path, label_val))
-            
+    
+    # IMPORTANTE: Ordenamos las rutas alfabéticamente para que el guardado 
+    # intermitente siempre sepa exactamente dónde se quedó.
+    paths.sort(key=lambda x: str(x[0]))
     return paths
 
 # --- FUNCIÓN PARA PLOTEAR LA MEDIANA ---
@@ -248,7 +241,6 @@ def plot_median_result(prob_name, est, D, img_data):
     seg = np.zeros_like(img)
     colors = np.linspace(0, 255, D + 1)
     
-    # Asignar colores dinámicamente según la cantidad de umbrales
     seg[img < thresholds[0]] = colors[0]
     for i in range(D - 1):
         mask = (img >= thresholds[i]) & (img < thresholds[i+1])
@@ -278,42 +270,46 @@ def plot_median_result(prob_name, est, D, img_data):
     plt.suptitle(f"Mediana (Fitness) - {prob_name} - {est} (D={D})")
     plt.tight_layout()
     safe_est = est.replace('/', '_')
-    plt.savefig(f"results/images/Mediana_{prob_name}_{safe_est}_D{D}.png", dpi=300)
+    plt.savefig(IMG_DIR / f"Mediana_{prob_name}_{safe_est}_D{D}.png", dpi=300)
     plt.close(fig)
 
-# --- FUNCIÓN DE TAREA PARALELA ---
-# --- FUNCIÓN DE TAREA PARALELA ---
+# --- FUNCIÓN DE TAREA PARALELA (MODIFICADA PARA RESUME) ---
 def procesar_combinacion(prob_name, image_list, est, D):
     if est == 'Standard_Otsu' and D >= 7:
-        print(f" -> [SALTANDO] {prob_name} - {est} (D={D}). Búsqueda exhaustiva inviable O(L^{D}).")
+        logging.warning(f"[SALTANDO] {prob_name} - {est} (D={D}). Búsqueda exhaustiva inviable.")
         return None 
 
-    # 1. Definir el nombre del archivo desde el principio
     safe_est = est.replace('/', '_')
-    filename = f"results/datasets/Radiomics_{prob_name}_{safe_est}_D{D}.csv"
+    output_dir = CSV_DIR / prob_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filename = output_dir / f"Radiomics_{safe_est}_D{D}.csv"
 
-    # 2. CONTROL DE ARCHIVOS EXISTENTES
-    if os.path.exists(filename):
-        print(f" -> [OMITIENDO] {filename} ya existe. Saltando procesamiento.")
-        return {
-            'Problema': prob_name,
-            'Estrategia': est,
-            'Umbrales_D': D,
-            'Tiempo_Segundos': 0,
-            'Tiempo_Minutos': 0,
-            'Nota': 'Ya existia'
-        }
+    # Lógica de Interrupción y Reanudación
+    start_idx = 0
+    if filename.exists():
+        try:
+            df_existente = pd.read_csv(filename)
+            start_idx = len(df_existente)
+            if start_idx >= len(image_list):
+                logging.info(f"[COMPLETADO PREVIAMENTE] {prob_name} | {est} | D={D}")
+                return {'Problema': prob_name, 'Estrategia': est, 'Umbrales_D': D, 'Tiempo_Segundos': 0, 'Nota': 'Ya existía'}
+            else:
+                logging.info(f"[REANUDANDO] {prob_name} | {est} | D={D} -> Desde imagen {start_idx}/{len(image_list)}")
+        except pd.errors.EmptyDataError:
+            logging.warning(f"Archivo {filename} vacío. Reiniciando extracción para esta configuración.")
+            start_idx = 0
+    else:
+        logging.info(f"[INICIANDO] {prob_name} | {est} | D={D}")
 
-    print(f" -> [INICIANDO] {prob_name} | {est} | D={D}")
     start_time = time.time()
     
     th_cols = [f'P{i}' for i in range(D)]
     cols = th_cols + ['mu','std','num_regiones','area_max','area_total','contrast','energy','homogeneity', 'label', 'best_fitness']
     
-    data_rows = []
     tracking_data = []
 
-    for img_path, lbl in image_list:
+    # Iterar solo sobre las imágenes restantes
+    for idx, (img_path, lbl) in enumerate(image_list[start_idx:], start=start_idx):
         img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
         if img is None: continue
         
@@ -338,88 +334,89 @@ def procesar_combinacion(prob_name, image_list, est, D):
         
         features = extract_features(img, thresholds)
         row_data = features + [lbl, best_fitness]
-        data_rows.append(row_data)
+        
+        # Guardado Fila por Fila (Append)
+        df_row = pd.DataFrame([row_data], columns=cols)
+        # Si el archivo no existe (o es la primera fila), escribe el encabezado
+        write_header = not filename.exists()
+        df_row.to_csv(filename, mode='a', header=write_header, index=False)
         
         tracking_data.append({
-            'img': img,
-            'thresholds': thresholds,
-            'convergence': convergence_curve,
-            'fitness': best_fitness
+            'img': img, 'thresholds': thresholds,
+            'convergence': convergence_curve, 'fitness': best_fitness
         })
+
+        # Opcional: Descomenta esto si quieres ver el progreso en consola de cada imagen (puede llenar mucho la pantalla)
+        # if idx % 50 == 0:
+        #     logging.info(f"Progreso {prob_name} | {est} | D={D}: {idx}/{len(image_list)}")
     
-    if not data_rows:
-        return None
-        
-    df_result = pd.DataFrame(data_rows, columns=cols)
-    # 3. Guardar usando el nombre que definimos arriba
-    df_result.to_csv(filename, index=False)
-    
+    # Plotear la mediana solo si se generaron suficientes datos en esta corrida
     if tracking_data:
         tracking_data.sort(key=lambda x: x['fitness'])
         median_idx = len(tracking_data) // 2
-        median_item = tracking_data[median_idx]
-        plot_median_result(prob_name, est, D, median_item) 
+        plot_median_result(prob_name, est, D, tracking_data[median_idx]) 
         
     elapsed_time = time.time() - start_time
-    print(f" <- [FINALIZADO] {prob_name} - {est} (D={D}) | Tiempo: {round(elapsed_time, 2)}s")
+    logging.info(f"<- [FINALIZADO PARCIAL/TOTAL] {prob_name} - {est} (D={D}) | Tiempo sesión: {round(elapsed_time, 2)}s")
 
     return {
-        'Problema': prob_name,
-        'Estrategia': est,
-        'Umbrales_D': D,
-        'Tiempo_Segundos': round(elapsed_time, 2),
-        'Tiempo_Minutos': round(elapsed_time / 60, 2)
+        'Problema': prob_name, 'Estrategia': est, 'Umbrales_D': D,
+        'Tiempo_Segundos': round(elapsed_time, 2), 'Tiempo_Minutos': round(elapsed_time / 60, 2)
     }
 
-# --- PIPELINE MAESTRO ---
+# --- PIPELINE MAESTRO ACTUALIZADO ---
 def generate_all_datasets(main_path):
-    os.makedirs('results/datasets', exist_ok=True)
-    os.makedirs('results/images', exist_ok=True)
-    os.makedirs('results/metrics', exist_ok=True)
-    os.makedirs('results/logs', exist_ok=True)
-    print("=== RECOPILANDO RUTAS DE IMÁGENES ===")
-    problemas = {
-        "COVID19": get_covid_paths(main_path),
-        "Neumonia": get_neumonia_paths(main_path),
-        "Tuberculosis": get_tb_paths(main_path)
-    }
+    logging.info("=== RECOPILANDO RUTAS DE IMÁGENES ===")
+    problemas = {}
+    
+    base_dir = Path(main_path) / "Brain-X-Ray"
+    
+    if not base_dir.exists():
+        logging.error(f"![ERROR] No se encontró la ruta esperada: {base_dir}")
+        return
+
+    for dataset_folder in base_dir.iterdir():
+        if dataset_folder.is_dir():
+            prob_name = dataset_folder.name
+            rutas_encontradas = get_dataset_paths(dataset_folder)
+            if rutas_encontradas:
+                problemas[prob_name] = rutas_encontradas
+                logging.info(f"[{prob_name}] Encontradas {len(rutas_encontradas)} imágenes.")
     
     estrategias = ['uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
     umbrales = [3, 6, 12]
     
     lista_tareas = []
     for prob_name, image_list in problemas.items():
-        if not image_list:
-            print(f"![AVISO] No hay imágenes para {prob_name}. Saltando...")
-            continue
-        print(f"[{prob_name}] Encontradas {len(image_list)} imágenes.")
-        
         for D in umbrales:
             for est in estrategias:
                 lista_tareas.append((prob_name, image_list, est, D))
             
     if not lista_tareas:
-        print("No se encontraron imágenes en las rutas especificadas. Revisa tu carpeta 'dataset'.")
+        logging.warning("No se generaron tareas. Revisa la estructura de tus carpetas.")
         return
 
-    print(f"\n=== INICIANDO EXTRACCIÓN PARALELA ({len(lista_tareas)} tareas) ===")
-    print("Utilizando todos los núcleos disponibles. Esto puede tardar unos minutos...\n")
+    logging.info(f"\n=== INICIANDO EXTRACCIÓN PARALELA ({len(lista_tareas)} tareas) ===")
+    logging.info("El script guardará el progreso fila por fila. Puedes detenerlo en cualquier momento.")
     
     timing_records = Parallel(n_jobs=-1)(
         delayed(procesar_combinacion)(prob, imgs, est, D) for prob, imgs, est, D in lista_tareas
     )
 
-    # Filtrar los None devueltos por las ejecuciones omitidas
     timing_records = [r for r in timing_records if r is not None]
 
-    print("\n" + "="*50)
-    print("RESUMEN DE TIEMPOS DE PROCESAMIENTO")
-    print("="*50)
+    logging.info("\n" + "="*50)
+    logging.info("RESUMEN DE TIEMPOS DE PROCESAMIENTO (Sesión actual)")
+    logging.info("="*50)
     df_times = pd.DataFrame(timing_records)
-    print(df_times.to_string(index=False))
-    df_times.to_csv("results/metrics/Tiempos_Procesamiento_Totales.csv", index=False)
-    print("\n[OK] Tabla de tiempos guardada como 'results/metrics/Tiempos_Procesamiento_Totales.csv'")
-    print("[OK] Todos los CSVs y Gráficos PNG han sido guardados.")
+    
+    # Evitar imprimir la tabla si está vacía
+    if not df_times.empty:
+        print(df_times.to_string(index=False))
+        df_times.to_csv(METRICS_DIR / "Tiempos_Procesamiento_Sesion.csv", mode='a', header=not (METRICS_DIR / "Tiempos_Procesamiento_Sesion.csv").exists(), index=False)
+        logging.info("[OK] Tabla de tiempos actualizada en 'results/brain/metrics/Tiempos_Procesamiento_Sesion.csv'")
+    
+    logging.info("[OK] Todos los resultados radiómicos están a salvo en 'results/brain/csv_caracteristicas_radiomicas_brain'.")
 
 if __name__ == "__main__": 
     generate_all_datasets('dataset')

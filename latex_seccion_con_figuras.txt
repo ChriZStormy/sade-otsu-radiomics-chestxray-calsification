@@ -1,0 +1,110 @@
+\subsection{Classification Performance}
+
+To rigorously evaluate the algorithms within their specific clinical contexts, the performance metrics and statistical rankings are presented independently for the chest (diffuse pathologies) and brain (localized pathologies) experimental blocks. The F1-Score is utilized as the primary evaluation metric to account for the intrinsic class imbalances within the medical datasets.
+
+\subsubsection{Phase 1: Pulmonary CXR Pathologies}
+
+% --- Figures for Pulmonary CXR Datasets ---
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{results/images/Ejemplo_MultiD_COVID19_uSADE_rand_1.png}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological COVID-19 cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_covid19}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{results/images/Ejemplo_MultiD_Neumonia_uSADE_rand_1.png}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological Pneumonia cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_pneumonia}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{results/images/Ejemplo_MultiD_Tuberculosis_uSADE_rand_1.png}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological Tuberculosis cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_tuberculosis}
+\end{figure}
+% ------------------------------------------
+
+Table \ref{tab:f1_results_chest} summarizes the mean F1-Score achieved by the 12 strategies across the chest X-ray datasets.
+
+\begin{table}[ht]
+\caption{Mean F1-Score for each global strategy across Pulmonary CXR datasets.}
+\label{tab:f1_results_chest}
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Strategy} & \textbf{COVID-19} & \textbf{Pneumonia} & \textbf{Tuberculosis} & \textbf{Average} \\
+\hline
+$\mu$SADE\_rand\_1\_D3 & 0.5151 & 0.9398 & 0.6779 & \textbf{0.7110} \\
+DE\_best\_1\_D3 & 0.5153 & 0.9395 & 0.6778 & 0.7109 \\
+$\mu$SADE\_best\_1\_D3 & 0.5153 & 0.9395 & 0.6778 & 0.7108 \\
+DE\_rand\_1\_D3 & 0.5148 & 0.9394 & 0.6778 & 0.7107 \\
+DE\_rand\_1\_D6 & 0.4944 & 0.9293 & 0.6897 & 0.7045 \\
+$\mu$SADE\_rand\_1\_D6 & 0.4957 & 0.9279 & 0.6893 & 0.7043 \\
+$\mu$SADE\_best\_1\_D6 & 0.4935 & 0.9295 & 0.6889 & 0.7039 \\
+DE\_best\_1\_D6 & 0.4903 & 0.9279 & 0.6873 & 0.7018 \\
+DE\_rand\_1\_D12 & 0.4785 & 0.9142 & 0.6873 & 0.6933 \\
+$\mu$SADE\_rand\_1\_D12 & 0.4758 & 0.9144 & 0.6842 & 0.6915 \\
+$\mu$SADE\_best\_1\_D12 & 0.4634 & 0.9162 & 0.6859 & 0.6885 \\
+DE\_best\_1\_D12 & 0.4451 & 0.9148 & 0.6816 & 0.6805 \\
+\hline
+\end{tabular}
+\end{table}
+
+Within the pulmonary domain, the Pneumonia dataset proved to be the least challenging (F1-Scores near 0.94), while COVID-19 presented the greatest difficulty. The results indicate that an increase in the number of thresholds from $D=3$ to $D=12$ leads to a consistent degradation of classification performance across all algorithms. This suggests that over-segmentation fractures the diffuse density gradients of lung tissues, introducing noise into the GLCM radiomic features.
+
+\subsubsection{Phase 2: Neurological MRI/CT Pathologies}
+
+% --- Figures for Neurological MRI/CT Datasets ---
+% Note: Quotes are used inside \includegraphics to handle spaces in filenames.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{"results/brain/images/Ejemplo_MultiD_Alzheimer MRI Preprocessed Dataset_Binario_uSADE_rand_1.png"}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological Alzheimer's disease cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_alzheimer}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{"results/brain/images/Ejemplo_MultiD_Brain Stroke CT Dataset_Binario_uSADE_rand_1.png"}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological Brain Stroke cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_stroke}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{"results/brain/images/Ejemplo_MultiD_Brain Tumor MRI Dataset_Binario_uSADE_rand_1.png"}
+    \caption{Multi-level segmentation ($D=3, 6, 12$) for healthy and pathological Brain Tumor cases using $\mu$SADE/rand/1.}
+    \label{fig:seg_tumor}
+\end{figure}
+% ------------------------------------------------
+
+For the neurological datasets, the classification performance exhibits a different threshold dependency, tailored to the intricate overlapping structures of the brain. Table \ref{tab:f1_results_brain} details the F1-Scores for these datasets.
+
+\begin{table}[H]
+\caption{Mean F1-Score for each global strategy across Neurological MRI/CT datasets.}
+\label{tab:f1_results_brain}
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Strategy} & \textbf{Alzheimer} & \textbf{Stroke} & \textbf{Tumor} & \textbf{Average} \\
+\hline
+DE\_rand\_1\_D12 & 0.7286 & 0.5851 & 0.9568 & \textbf{0.7568} \\
+$\mu$SADE\_rand\_1\_D12 & 0.7266 & 0.5848 & 0.9575 & 0.7563 \\
+$\mu$SADE\_best\_1\_D12 & 0.7267 & 0.5849 & 0.9565 & 0.7560 \\
+DE\_best\_1\_D12 & 0.7257 & 0.5840 & 0.9579 & 0.7559 \\
+DE\_best\_1\_D6 & 0.7202 & 0.5817 & 0.9565 & 0.7528 \\
+$\mu$SADE\_rand\_1\_D6 & 0.7196 & 0.5818 & 0.9567 & 0.7527 \\
+$\mu$SADE\_best\_1\_D3 & 0.7244 & 0.5774 & 0.9561 & 0.7526 \\
+$\mu$SADE\_rand\_1\_D3 & 0.7245 & 0.5774 & 0.9559 & 0.7526 \\
+DE\_best\_1\_D3 & 0.7244 & 0.5774 & 0.9560 & 0.7526 \\
+DE\_rand\_1\_D3 & 0.7242 & 0.5773 & 0.9559 & 0.7525 \\
+DE\_rand\_1\_D6 & 0.7175 & 0.5819 & 0.9566 & 0.7520 \\
+$\mu$SADE\_best\_1\_D6 & 0.7169 & 0.5818 & 0.9566 & 0.7518 \\
+\hline
+\end{tabular}
+\end{table}
+
+In this experimental block, Brain Tumors yielded the highest F1-Scores (exceeding 0.95), while Stroke lesions proved more complex to classify. The empirical data shows that $D=12$ configurations dominate the top performance tiers. This validates the premise that accurately mapping the structural heterogeneity of intracranial tissues necessitates high-dimensional thresholding to preserve radiomic integrity.

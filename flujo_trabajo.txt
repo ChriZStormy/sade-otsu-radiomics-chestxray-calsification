@@ -1,0 +1,69 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
+\begin{document}
+
+\begin{center}
+\textbf{\Large Diagrama de Flujo del Proceso: Segmentación, Extracción y Clasificación}
+\vspace{1cm}
+
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30]
+\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=orange!30, text width=4cm]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30, text width=2cm]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\begin{tikzpicture}[node distance=1.8cm]
+
+% Nodos - Fase de Segmentación y Características
+\node (start) [startstop] {Inicio};
+\node (data) [io, below of=start] {Cargar Datasets (Tórax y Cerebro)};
+\node (split) [process, below of=data, yshift=-0.2cm] {Separar por Clases\\(Sano / Enfermo)};
+\node (loop) [process, below of=split, yshift=-0.2cm] {Por cada imagen en el dataset};
+\node (hist) [process, below of=loop, yshift=-0.2cm] {Convertir a escala de grises y calcular Histograma};
+\node (opt) [process, below of=hist, yshift=-0.2cm] {Optimización Multi-Otsu \\(uSADE / DE)};
+\node (seg) [process, below of=opt, yshift=-0.2cm] {Generar Imagen Segmentada (D umbrales)};
+\node (feat) [process, below of=seg, yshift=-0.2cm] {Extracción de Características Radiómicas (GLCM, área, etc.)};
+\node (save_csv) [io, below of=feat, yshift=-0.2cm] {Guardar Características en CSV};
+
+% Nodos - Fase de Clasificación
+\node (load_csv) [process, right of=split, xshift=4cm] {Cargar CSVs de Radiómica};
+\node (cv) [process, below of=load_csv, yshift=-0.2cm] {División de Datos (Repeated Stratified K-Fold)};
+\node (scale) [process, below of=cv, yshift=-0.2cm] {Estandarización (StandardScaler)};
+\node (svm) [process, below of=scale, yshift=-0.2cm] {Entrenamiento del Clasificador (SVM Lineal)};
+\node (metrics) [process, below of=svm, yshift=-0.2cm] {Evaluación de Modelos (F1, AUC, Accuracy)};
+\node (stats) [process, below of=metrics, yshift=-0.2cm] {Pruebas Estadísticas (Friedman y Nemenyi)};
+\node (save_res) [io, below of=stats, yshift=-0.2cm] {Generar Tablas y Gráficas de Resultados};
+\node (end) [startstop, below of=save_res, yshift=-0.2cm] {Fin};
+
+% Flechas - Fase 1
+\draw [arrow] (start) -- (data);
+\draw [arrow] (data) -- (split);
+\draw [arrow] (split) -- (loop);
+\draw [arrow] (loop) -- (hist);
+\draw [arrow] (hist) -- (opt);
+\draw [arrow] (opt) -- (seg);
+\draw [arrow] (seg) -- (feat);
+\draw [arrow] (feat) -- (save_csv);
+
+% Bucle
+\draw [arrow] (save_csv.west) -- ++(-1.5,0) |- (loop.west) node[pos=0.25, left] {Siguiente Imagen};
+
+% Conexión Fase 1 a Fase 2
+\draw [arrow] (save_csv.east) -- ++(1,0) |- (load_csv.west) node[pos=0.25, right] {Fin de Extracción};
+
+% Flechas - Fase 2
+\draw [arrow] (load_csv) -- (cv);
+\draw [arrow] (cv) -- (scale);
+\draw [arrow] (scale) -- (svm);
+\draw [arrow] (svm) -- (metrics);
+\draw [arrow] (metrics) -- (stats);
+\draw [arrow] (stats) -- (save_res);
+\draw [arrow] (save_res) -- (end);
+
+\end{tikzpicture}
+\end{center}
+
+\end{document}
