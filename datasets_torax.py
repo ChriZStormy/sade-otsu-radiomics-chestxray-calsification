@@ -196,6 +196,22 @@ def extract_features(image, thresholds):
     ]
     return features
 
+def extract_features_unsegmented(image):
+    # Sin segmentación: toda la imagen es la ROI
+    mask = np.ones_like(image, dtype=np.uint8)
+    regions = regionprops(label(mask))
+    areas = [r.area for r in regions]
+    
+    glcm = graycomatrix(image, [1], [0], 256, symmetric=True, normed=True)
+    
+    features = [
+        np.mean(image), np.std(image),
+        len(regions), max(areas) if areas else 0, sum(areas),
+        graycoprops(glcm, 'contrast')[0,0], graycoprops(glcm, 'energy')[0,0], graycoprops(glcm, 'homogeneity')[0,0]
+    ]
+    return features
+
+
 # --- RECOLECTORES DE RUTAS ---
 def     get_covid_paths(base):
     paths = []
@@ -245,24 +261,29 @@ def plot_median_result(prob_name, est, D, img_data):
     thresholds = img_data['thresholds']
     convergence = img_data['convergence']
     
-    seg = np.zeros_like(img)
-    colors = np.linspace(0, 255, D + 1)
-    
-    # Asignar colores dinámicamente según la cantidad de umbrales
-    seg[img < thresholds[0]] = colors[0]
-    for i in range(D - 1):
-        mask = (img >= thresholds[i]) & (img < thresholds[i+1])
-        seg[mask] = colors[i+1]
-    seg[img >= thresholds[-1]] = colors[-1]
-    
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     axes[0].imshow(img, cmap='gray')
     axes[0].set_title("Original")
     axes[0].axis('off')
     
-    axes[1].imshow(seg, cmap='gray')
-    axes[1].set_title(f"Segmentada (D={D})\nUmbrales: {thresholds}")
-    axes[1].axis('off')
+    if len(thresholds) == 0:
+        axes[1].imshow(img, cmap='gray')
+        axes[1].set_title("Sin segmentar (Original)")
+        axes[1].axis('off')
+    else:
+        seg = np.zeros_like(img)
+        colors = np.linspace(0, 255, D + 1)
+        
+        # Asignar colores dinámicamente según la cantidad de umbrales
+        seg[img < thresholds[0]] = colors[0]
+        for i in range(D - 1):
+            mask = (img >= thresholds[i]) & (img < thresholds[i+1])
+            seg[mask] = colors[i+1]
+        seg[img >= thresholds[-1]] = colors[-1]
+        
+        axes[1].imshow(seg, cmap='gray')
+        axes[1].set_title(f"Segmentada (D={D})\nUmbrales: {thresholds}")
+        axes[1].axis('off')
     
     if convergence:
         fes_list, fitness_list = convergence
@@ -290,7 +311,14 @@ def procesar_combinacion(prob_name, image_list, est, D):
 
     # 1. Definir el nombre del archivo desde el principio
     safe_est = est.replace('/', '_')
-    filename = f"results/datasets/Radiomics_{prob_name}_{safe_est}_D{D}.csv"
+    rel_filename = f"results/datasets/Radiomics_{prob_name}_{safe_est}_D{D}.csv"
+    
+    # Solución para el límite de 260 caracteres en Windows
+    abs_filename = os.path.abspath(rel_filename)
+    if os.name == 'nt' and not abs_filename.startswith('\\\\?\\'):
+        abs_filename = '\\\\?\\' + abs_filename
+        
+    filename = abs_filename
 
     # 2. CONTROL DE ARCHIVOS EXISTENTES
     if os.path.exists(filename):
@@ -307,7 +335,7 @@ def procesar_combinacion(prob_name, image_list, est, D):
     print(f" -> [INICIANDO] {prob_name} | {est} | D={D}")
     start_time = time.time()
     
-    th_cols = [f'P{i}' for i in range(D)]
+    th_cols = [f'P{i}' for i in range(D)] if est != 'Original' else []
     cols = th_cols + ['mu','std','num_regiones','area_max','area_total','contrast','energy','homogeneity', 'label', 'best_fitness']
     
     data_rows = []
@@ -321,22 +349,28 @@ def procesar_combinacion(prob_name, image_list, est, D):
         total_pixels = img.size
         
         convergence_curve = []
-        if est == 'Standard_Otsu':
+        if est == 'Original':
+            best_fitness = 0
+            thresholds = []
+            features = extract_features_unsegmented(img)
+        elif est == 'Standard_Otsu':
             try: 
                 thresholds = threshold_multiotsu(img, classes=D+1)
                 best_fitness = calculate_fitness(thresholds, hist, total_pixels)
             except: 
                 continue
+            features = extract_features(img, thresholds)
         elif est.startswith('uSADE'):
             strat_map = {'uSADE_rand_1': 'DE/rand/1', 'uSADE_best_1': 'DE/best/1'}
             optimizer = uSADE_MultiOtsu(D=D, strategy=strat_map[est], max_fes=D*1000)
             thresholds, best_fitness, convergence_curve = optimizer.optimize(img)
+            features = extract_features(img, thresholds)
         elif est.startswith('DE'):
             strat_map = {'DE_rand_1': 'DE/rand/1', 'DE_best_1': 'DE/best/1'}
             optimizer = StandardDE_MultiOtsu(D=D, strategy=strat_map[est], max_fes=D*1000)
             thresholds, best_fitness, convergence_curve = optimizer.optimize(img)
+            features = extract_features(img, thresholds)
         
-        features = extract_features(img, thresholds)
         row_data = features + [lbl, best_fitness]
         data_rows.append(row_data)
         
@@ -384,8 +418,8 @@ def generate_all_datasets(main_path):
         "Tuberculosis": get_tb_paths(main_path)
     }
     
-    estrategias = ['uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
-    umbrales = [3, 6, 12]
+    estrategias = ['Original', 'uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
+    umbrales = [3]
     
     lista_tareas = []
     for prob_name, image_list in problemas.items():
@@ -396,7 +430,10 @@ def generate_all_datasets(main_path):
         
         for D in umbrales:
             for est in estrategias:
-                lista_tareas.append((prob_name, image_list, est, D))
+                if est == 'Original' and D != umbrales[0]:
+                    continue # Evitar procesar 'Original' varias veces si hubiera más umbrales en el futuro
+                D_val = 0 if est == 'Original' else D
+                lista_tareas.append((prob_name, image_list, est, D_val))
             
     if not lista_tareas:
         print("No se encontraron imágenes en las rutas especificadas. Revisa tu carpeta 'dataset'.")

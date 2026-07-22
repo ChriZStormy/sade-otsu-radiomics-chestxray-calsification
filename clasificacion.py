@@ -158,7 +158,7 @@ def realizar_test_estadistico_maestro(df_completo, metrica='f1_test'):
     # RANKING MAESTRO (LA TABLA QUE PIDIÓ TU ASESOR)
     # ---------------------------------------------------------
     print("\n" + "="*60)
-    print(f"[RANKING DEFINITIVO - LAS 12 ESTRATEGIAS]")
+    print(f"[RANKING DEFINITIVO - LAS ESTRATEGIAS]")
     print("="*60)
     
     # Ranking: 1 es el mejor (mayor métrica)
@@ -184,7 +184,7 @@ def realizar_test_estadistico_maestro(df_completo, metrica='f1_test'):
     p_values_nemenyi.columns = estrategias
     p_values_nemenyi.index = estrategias
     
-    # Gráfica del Heatmap Maestro (Más grande por ser 12x12)
+    # Gráfica del Heatmap Maestro
     plt.figure(figsize=(14, 12)) 
     sns.heatmap(p_values_nemenyi, annot=True, cmap="YlGnBu", vmin=0, vmax=0.1, 
                 cbar_kws={'label': 'P-value'}, fmt=".3f", linewidths=0.5, 
@@ -209,8 +209,8 @@ def realizar_test_estadistico_maestro(df_completo, metrica='f1_test'):
 if __name__ == "__main__":
     start_time = time.time()
     
-    enfermedades = ["Alzheimer", "Stroke", "Tumor"]
-    algoritmos = ['uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
+    enfermedades = ["COVID19", "Neumonia", "Tuberculosis"]
+    algoritmos = ['Original', 'uSADE_rand_1', 'uSADE_best_1', 'DE_rand_1', 'DE_best_1']
     niveles_umbrales = [3, 6, 12]
     
     n_splits = 10
@@ -225,8 +225,11 @@ if __name__ == "__main__":
     for D in niveles_umbrales:
         for enfermedad in enfermedades:
             for mutacion in algoritmos:
-                archivo = f"results/radiomics-datasets-brain/Radiomics_{enfermedad}_{mutacion}_D{D}.csv"
-                lista_tareas.append((archivo, enfermedad, mutacion, D))
+                if mutacion == 'Original' and D != niveles_umbrales[0]:
+                    continue
+                D_val = 0 if mutacion == 'Original' else D
+                archivo = f"results/datasets/Radiomics_{enfermedad}_{mutacion}_D{D_val}.csv"
+                lista_tareas.append((archivo, enfermedad, mutacion, D_val))
 
     print(f"\n[Buscando {len(lista_tareas)} archivos CSV en paralelo...]")
     

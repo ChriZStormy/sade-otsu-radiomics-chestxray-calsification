@@ -43,11 +43,18 @@ def renombrar_y_unificar_csvs():
             nuevo_nombre = archivo_original.name.replace("Radiomics_", f"Radiomics_{prefijo_enfermedad}_")
             ruta_destino = DIR_DESTINO / nuevo_nombre
             
+            # Fix para el límite de caracteres en Windows (WinError 206)
+            abs_src = os.path.abspath(str(archivo_original))
+            abs_dst = os.path.abspath(str(ruta_destino))
+            if os.name == 'nt':
+                if not abs_src.startswith('\\\\?\\'): abs_src = '\\\\?\\' + abs_src
+                if not abs_dst.startswith('\\\\?\\'): abs_dst = '\\\\?\\' + abs_dst
+            
             # Usar copy2 es más seguro, así mantienes tu respaldo original intacto
-            shutil.copy2(archivo_original, ruta_destino)
+            shutil.copy2(abs_src, abs_dst)
             contador_archivos += 1
             
-        print(f"  ✓ {len(archivos_csv)} archivos renombrados y movidos exitosamente.")
+        print(f"  -> {len(archivos_csv)} archivos renombrados y movidos exitosamente.")
 
     print(f"\n¡Completado! {contador_archivos} archivos listos en '{DIR_DESTINO}'.")
     print("Ya puedes ejecutar tu script de test de Friedman y Nemenyi.")
